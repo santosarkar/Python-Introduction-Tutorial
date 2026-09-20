@@ -1,0 +1,1072 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<title>Python Introduction · Dark Code</title>
+<style>
+:root{
+  --bg:#000000;
+  --fg:#ffffff;
+  --hl:#FFD43B;
+  --ac:#3776AB;
+  --ac-soft:#6FA8DC;
+  --s:1;
+  --sans:"SF Pro Display","Segoe UI Variable Display","Segoe UI",Inter,"Helvetica Neue",Arial,system-ui,sans-serif;
+  --mono:"JetBrains Mono","SF Mono","Cascadia Code",Consolas,"Liberation Mono",monospace;
+  --ease:cubic-bezier(.22,1,.36,1);      /* smooth ease-out (long, soft tail) */
+  --spring:cubic-bezier(.34,1.56,.64,1); /* gentle overshoot */
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:var(--bg);color:var(--fg);overflow:hidden}
+body{
+  font-family:var(--sans);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:26px;
+  -webkit-font-smoothing:antialiased;
+}
+
+/* ---------- Frame + screen ---------- */
+#frame{position:relative;width:calc(420px * var(--s));height:calc(750px * var(--s));flex:none}
+#screen{
+  position:absolute;left:0;top:0;width:420px;height:750px;
+  transform:scale(var(--s));transform-origin:0 0;
+  background:#000;border-radius:36px;overflow:hidden;
+  border:1px solid rgba(255,255,255,.09);
+  box-shadow:0 0 0 1px rgba(255,255,255,.02),0 0 90px rgba(55,118,171,.16),0 30px 80px rgba(0,0,0,.85);
+}
+#ambient{
+  position:absolute;left:50%;top:260px;width:440px;height:440px;margin:-220px 0 0 -220px;
+  background:radial-gradient(circle,rgba(55,118,171,.17),rgba(55,118,171,0) 66%);
+  animation:breathe 7s ease-in-out infinite;pointer-events:none;
+}
+
+/* floating dust: very quiet background life */
+#dust{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+#dust i{
+  position:absolute;border-radius:50%;background:#9CC4E8;opacity:0;
+  animation:drift var(--t) ease-in-out var(--dl) infinite alternate;
+}
+#dust i.y{background:var(--hl)}
+
+/* scene progress (thin line at the top) */
+#prog{position:absolute;left:34px;right:34px;top:24px;height:3px;border-radius:3px;background:rgba(255,255,255,.09);overflow:hidden}
+#prog i{display:block;height:100%;transform-origin:0 50%;transform:scaleX(0);background:linear-gradient(90deg,var(--ac),var(--hl))}
+
+/* ---------- Stage ---------- */
+#stage{position:absolute;left:0;top:0;width:420px;height:520px}
+.group{
+  position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  opacity:0;transform:scale(.97);
+  transition:opacity .5s ease,transform .8s var(--ease);
+  pointer-events:none;
+}
+.group.on{opacity:1;transform:none}
+.group.out{opacity:0;transform:scale(1.04);transition:opacity .35s ease,transform .5s cubic-bezier(.4,0,1,1)}
+.item{
+  opacity:0;transform:translateY(18px) scale(.94);filter:blur(6px);
+  transition:opacity .6s var(--ease),transform .8s var(--ease),filter .6s var(--ease),border-color .35s,color .35s,box-shadow .35s;
+}
+.item.on{opacity:1;transform:none;filter:none}
+svg{display:block;overflow:visible}
+img{display:block;object-fit:contain;user-select:none;-webkit-user-drag:none}
+
+/* Scene 1 */
+.glow{
+  position:absolute;width:320px;height:320px;border-radius:50%;
+  background:radial-gradient(circle,rgba(55,118,171,.42),rgba(55,118,171,0) 68%);
+  opacity:0;transition:opacity .6s ease,transform 1s var(--ease);
+}
+.glow.on{opacity:.65}
+.glow.on.pulse{opacity:1;transform:scale(1.22)}
+#py-logo{position:relative}
+.floaty{animation:float 4.2s ease-in-out infinite;filter:drop-shadow(0 0 26px rgba(55,118,171,.55))}
+
+/* Orbits (scene 1 halo + community scene) */
+.orbs{position:relative;width:280px;height:280px;flex:none}
+.orbs.halo{position:absolute;width:340px;height:340px}
+.orbit{
+  position:absolute;left:50%;top:50%;width:var(--w);height:var(--w);margin:calc(var(--w) / -2) 0 0 calc(var(--w) / -2);
+  border-radius:50%;border:1px dashed rgba(111,168,220,.32);
+  animation:spin var(--t,20s) linear infinite;
+}
+.orbit.rev{animation-direction:reverse}
+.orbit.o1{--w:120px;--t:9s}
+.orbit.o2{--w:200px;--t:14s}
+.orbit.o3{--w:280px;--t:20s}
+.halo .orbit.o2{--w:262px;--t:16s}
+.halo .orbit.o3{--w:334px;--t:24s}
+.orbit i{
+  position:absolute;left:calc(50% - 5px);top:-5px;width:10px;height:10px;border-radius:50%;
+  background:var(--hl);box-shadow:0 0 14px rgba(255,212,59,.85);
+}
+.orbit i.b{top:auto;bottom:-5px;background:var(--ac-soft);box-shadow:0 0 14px rgba(111,168,220,.85)}
+.orbit i.c{left:-5px;top:calc(50% - 5px)}
+.orbit i.d{left:auto;right:-5px;top:calc(50% - 5px);background:var(--ac-soft);box-shadow:0 0 14px rgba(111,168,220,.85)}
+.orbit i.x{transform:scale(0);transition:transform .7s var(--spring)}
+.orbs.lit .orbit i.x{transform:scale(1)}
+#orbs::before{
+  content:"";position:absolute;inset:50px;border-radius:50%;
+  background:radial-gradient(circle,rgba(55,118,171,.38),rgba(55,118,171,0) 70%);
+}
+.orb-core{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);filter:drop-shadow(0 0 18px rgba(55,118,171,.7))}
+
+/* Scene 2 */
+.row{display:flex;gap:18px;align-items:flex-start;justify-content:center}
+.ic{width:104px;display:flex;flex-direction:column;align-items:center;gap:14px}
+.ring{
+  position:relative;width:96px;height:96px;border-radius:50%;display:grid;place-items:center;color:var(--ac-soft);
+  border:1px solid rgba(55,118,171,.6);
+  background:radial-gradient(circle at 50% 30%,rgba(55,118,171,.26),rgba(55,118,171,.04) 70%);
+  box-shadow:0 0 34px rgba(55,118,171,.22);
+}
+.ring::after{content:"";position:absolute;inset:-1px;border-radius:50%;border:1.5px solid var(--hl);opacity:0}
+.ic.on .ring::after{animation:ping 1.3s var(--ease) .2s both}
+.ring svg{width:52px;height:52px}
+.lbl{font-size:15px;font-weight:600;color:rgba(255,255,255,.8);letter-spacing:.01em}
+.spin{transform-box:fill-box;transform-origin:center;animation:spin 9s linear infinite}
+
+/* Scene 3 (windows) */
+.col{display:flex;flex-direction:column;gap:18px;align-items:stretch;width:340px}
+.win{
+  position:relative;border-radius:16px;border:1px solid rgba(255,255,255,.12);background:#07090c;overflow:hidden;
+  box-shadow:0 0 50px rgba(55,118,171,.16);
+}
+.win::after{
+  content:"";position:absolute;inset:0;pointer-events:none;transform:translateX(-120%);
+  background:linear-gradient(105deg,transparent 35%,rgba(255,255,255,.08) 50%,transparent 65%);
+}
+.win.on::after{animation:sweep 1.4s var(--ease) .3s both}
+.win.lit{border-color:rgba(255,212,59,.5);box-shadow:0 0 50px rgba(255,212,59,.14)}
+.win .bar{display:flex;align-items:center;gap:7px;padding:12px 16px;border-bottom:1px solid rgba(255,255,255,.07)}
+.win .bar i{width:9px;height:9px;border-radius:50%;background:rgba(255,255,255,.18)}
+.win .bar span{margin-left:auto;font:12px var(--mono);color:rgba(255,255,255,.42)}
+#code,#code2,#code3{font:600 22px/1.4 var(--mono);color:#fff;white-space:pre}
+#code{padding:26px 20px;min-height:82px}
+#code2{padding:26px 20px;min-height:136px}
+#code3{padding:24px 20px 16px;min-height:70px}
+#code .f,#code2 .f,#code3 .f{color:#7FB5E6}
+#code .p,#code2 .p,#code3 .p{color:rgba(255,255,255,.78)}
+#code .s,#code3 .s{color:var(--hl)}
+#code2 .n{color:var(--hl)}
+.caret{display:inline-block;width:10px;height:1.1em;background:var(--hl);margin-left:2px;vertical-align:-.18em;animation:blink 1s steps(1) infinite}
+.out{
+  border-radius:16px;border:1px solid rgba(255,212,59,.35);background:rgba(255,212,59,.04);
+  padding:16px 20px;display:flex;flex-direction:column;gap:8px;box-shadow:0 0 40px rgba(255,212,59,.08);
+}
+.out.on{animation:outglow 1.6s ease-out .15s both}
+.out .olbl{font-size:12px;color:rgba(255,255,255,.45);letter-spacing:.04em}
+.out .oval{font:700 24px var(--mono);color:#fff}
+.out .oval b{color:var(--hl);font-weight:700;margin-right:10px}
+
+/* Scene 4 */
+#net{width:340px}
+.ln{stroke:var(--ac);stroke-opacity:.42;stroke-width:1.2;stroke-dasharray:3 7;animation:flow 1.1s linear infinite;animation-delay:var(--d)}
+.nd{
+  fill:#000;stroke:var(--ac);stroke-width:2;transform-box:fill-box;transform-origin:center;
+  animation:npulse 2s ease-in-out infinite;animation-delay:var(--d);
+}
+
+/* Scene 5 */
+.node{
+  display:flex;align-items:center;gap:12px;padding:15px 38px;border-radius:20px;
+  font-size:26px;font-weight:700;letter-spacing:-.01em;color:rgba(255,255,255,.85);
+  border:1px solid rgba(255,255,255,.18);background:rgba(255,255,255,.03);min-width:220px;justify-content:center;
+}
+.node.lit{color:var(--hl);border-color:var(--hl);box-shadow:0 0 34px rgba(255,212,59,.25)}
+.node svg{width:28px;height:28px}
+.arrow{width:24px;height:38px;margin:6px 0;color:rgba(255,255,255,.4)}
+.arrow svg{animation:nudge 1.3s ease-in-out infinite}
+
+/* Scene 6 */
+.brand{font-size:60px;font-weight:800;letter-spacing:-.035em;text-shadow:0 0 44px rgba(55,118,171,.55)}
+.rule{
+  width:0;height:1px;margin:22px 0 20px;
+  background:linear-gradient(90deg,transparent,var(--ac),transparent);
+  transition:width .9s var(--ease);
+}
+.rule.on{width:260px}
+.url{font:500 18px var(--mono);color:var(--hl);letter-spacing:.06em}
+.cta{
+  margin-top:26px;padding:10px 22px;border-radius:999px;font-size:16px;font-weight:600;
+  color:rgba(255,255,255,.85);border:1px solid rgba(255,255,255,.18);background:rgba(255,255,255,.04);
+}
+#g-brand{padding-top:0}
+
+/* Extra scene: libraries */
+.libs{display:grid;grid-template-columns:1fr 1fr;gap:16px;width:340px}
+.lib{
+  display:flex;align-items:center;justify-content:center;padding:22px 12px;border-radius:20px;
+  font-size:24px;font-weight:700;letter-spacing:-.01em;color:rgba(255,255,255,.85);
+  border:1px solid rgba(55,118,171,.6);
+  background:radial-gradient(circle at 50% 30%,rgba(55,118,171,.26),rgba(55,118,171,.04) 70%);
+  box-shadow:0 0 34px rgba(55,118,171,.22);
+}
+.lib.lit{color:var(--hl);border-color:var(--hl);box-shadow:0 0 34px rgba(255,212,59,.25)}
+
+/* Extra scene: skill steps (bars wipe upward) */
+.steps{display:flex;gap:14px;align-items:flex-end;justify-content:center;width:340px}
+.step{
+  flex:1;display:flex;align-items:flex-end;justify-content:center;padding-bottom:16px;border-radius:18px;
+  font-size:15px;font-weight:600;color:rgba(255,255,255,.8);letter-spacing:.01em;
+  border:1px solid rgba(55,118,171,.6);
+  background:linear-gradient(180deg,rgba(55,118,171,.30),rgba(55,118,171,.05));
+  box-shadow:0 0 34px rgba(55,118,171,.22);
+}
+.step.item{
+  transform:none;clip-path:inset(100% -40px -40px -40px round 18px);
+  transition:opacity .6s var(--ease),clip-path 1s var(--ease),filter .6s var(--ease),border-color .35s,color .35s,box-shadow .35s;
+}
+.step.item.on{clip-path:inset(-40px round 18px)}
+.step.lit{color:var(--hl);border-color:var(--hl);box-shadow:0 0 34px rgba(255,212,59,.25)}
+
+/* NEW scene: year counter */
+.yr{display:flex;flex-direction:column;align-items:center}
+#yr-logo{margin-bottom:20px}
+#yr-logo svg,#yr-logo img{filter:drop-shadow(0 0 20px rgba(55,118,171,.55))}
+#yr-num{
+  font:800 112px/1 var(--sans);letter-spacing:-.045em;font-variant-numeric:tabular-nums;color:#fff;
+  text-shadow:0 0 50px rgba(55,118,171,.6);
+  transition:opacity .6s var(--ease),transform .8s var(--ease),filter .6s var(--ease),color .5s ease,text-shadow .5s ease;
+}
+#yr-num.lit{color:var(--hl);text-shadow:0 0 54px rgba(255,212,59,.42)}
+#yr-rule{margin:18px 0 14px}
+.yr-cap{font-size:17px;font-weight:500;color:rgba(255,255,255,.55);letter-spacing:.01em}
+
+/* NEW scene: companies */
+.cos{display:flex;flex-direction:column;align-items:center;gap:14px;width:320px}
+#co-logo{margin-bottom:8px}
+#co-logo svg,#co-logo img{filter:drop-shadow(0 0 22px rgba(55,118,171,.55))}
+.co{
+  width:100%;display:flex;align-items:center;gap:16px;padding:13px 20px;border-radius:20px;
+  font-size:24px;font-weight:700;letter-spacing:-.01em;color:rgba(255,255,255,.88);
+  border:1px solid rgba(55,118,171,.6);
+  background:radial-gradient(circle at 50% 30%,rgba(55,118,171,.26),rgba(55,118,171,.04) 70%);
+  box-shadow:0 0 34px rgba(55,118,171,.22);
+}
+.co b{
+  width:36px;height:36px;border-radius:50%;display:grid;place-items:center;flex:none;
+  background:rgba(255,212,59,.12);color:var(--hl);font-size:18px;font-weight:800;
+}
+.co .sig{margin-left:auto}
+.co.lit{color:var(--hl);border-color:var(--hl);box-shadow:0 0 34px rgba(255,212,59,.25)}
+.sig{display:block;position:relative;width:24px;height:24px;flex:none}
+.tick{stroke-dasharray:24;stroke-dashoffset:24}
+.co.on .tick{animation:draw .5s var(--ease) .4s both}
+
+/* NEW scene: automation checklist */
+.tasks{padding:8px 0 10px}
+.task{display:flex;align-items:center;gap:14px;padding:12px 20px;font:600 19px var(--mono);color:rgba(255,255,255,.55);transition:color .4s ease}
+.task .sig::before{
+  content:"";position:absolute;inset:2px;border-radius:50%;
+  border:2.5px solid rgba(255,212,59,.2);border-top-color:var(--hl);
+  animation:spin .8s linear infinite;transition:opacity .2s ease;
+}
+.task .sig svg{position:absolute;inset:0;opacity:0;transform:scale(.6);transition:opacity .3s ease,transform .6s var(--spring)}
+.task.done{color:#fff}
+.task.done .sig::before{animation:none;opacity:0}
+.task.done .sig svg{opacity:1;transform:none}
+.task.done .tick{animation:draw .45s var(--ease) .1s both}
+
+/* NEW scene: pip install */
+.pwrap{display:flex;align-items:center;gap:12px;padding:0 20px 22px}
+.pbar{flex:1;height:6px;border-radius:99px;background:rgba(255,255,255,.1);overflow:hidden}
+.pbar i{display:block;height:100%;border-radius:inherit;background:linear-gradient(90deg,var(--ac),var(--hl));transform-origin:0 50%;transform:scaleX(0)}
+.pwrap.on .pbar i{animation:fillbar 1s var(--ease) .3s both}
+.pwrap b{font:600 12px var(--mono);color:rgba(255,255,255,.5);opacity:0}
+.pwrap.on b{animation:fadein .3s ease 1.15s both}
+
+/* NEW scene: community */
+.chips{display:flex;gap:12px;margin-top:28px}
+.chip{
+  padding:10px 22px;border-radius:999px;font-size:20px;font-weight:700;color:rgba(255,255,255,.85);
+  border:1px solid rgba(55,118,171,.6);
+  background:radial-gradient(circle at 50% 30%,rgba(55,118,171,.26),rgba(55,118,171,.04) 70%);
+  box-shadow:0 0 30px rgba(55,118,171,.2);
+}
+.chip.lit{color:var(--hl);border-color:var(--hl);box-shadow:0 0 30px rgba(255,212,59,.25)}
+
+/* ---------- Keyword flash layer ---------- */
+#flash{
+  position:absolute;inset:0;background:rgba(0,0,0,.94);opacity:0;transition:opacity .3s ease;pointer-events:none;
+}
+#flash.on{opacity:1}
+.kw{position:absolute;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center}
+.kw.on{display:flex}
+.kw.on>*{animation:pop .55s var(--ease) both}
+.cap{margin-top:20px;font-size:24px;font-weight:700;letter-spacing:.01em}
+.fl svg,.fl img{animation:float 4.2s ease-in-out infinite;filter:drop-shadow(0 0 24px rgba(55,118,171,.55))}
+.codeflash{font:600 24px/1.7 var(--mono);width:330px}
+.codeflash .cl{display:block;white-space:pre;opacity:0}
+.kw.on .codeflash .cl{animation:slidein .45s var(--ease) var(--d) both}
+.codeflash .k{color:var(--hl);font-weight:600}
+.codeflash .f{color:#7FB5E6;font-weight:600}
+.codeflash .s{color:#9EE6A6;font-weight:600}
+.codeflash .p{color:rgba(255,255,255,.75);font-weight:600}
+.rip{fill:none;stroke:var(--hl);stroke-width:1.5;opacity:0;transform-box:fill-box;transform-origin:center}
+.kw.on .rip{animation:ripple 2s ease-out var(--d) infinite}
+.bar-c{fill:var(--ac);transform-box:fill-box;transform-origin:50% 100%;transform:scaleY(0)}
+.kw.on .bar-c{animation:grow .6s var(--ease) var(--d) both}
+.trend{fill:none;stroke:var(--hl);stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:420;stroke-dashoffset:420}
+.kw.on .trend{animation:draw .8s var(--ease) .25s both}
+.dot-c{fill:var(--hl);opacity:0}
+.kw.on .dot-c{animation:fadein .3s ease var(--d) both}
+.axis{stroke:rgba(255,255,255,.22);stroke-width:1.2}
+
+/* ---------- Subtitles ---------- */
+#subs{
+  position:absolute;left:0;right:0;bottom:0;height:230px;padding:0 34px 62px;
+  display:flex;align-items:flex-end;justify-content:center;text-align:center;
+}
+#sentence{
+  font-size:27px;line-height:1.38;font-weight:700;letter-spacing:-.012em;color:#fff;
+  opacity:0;transform:translateY(12px);transition:opacity .4s ease,transform .5s var(--ease);
+}
+#sentence.show{opacity:1;transform:none}
+.w{
+  display:inline-block;margin:0 .15em;color:rgba(255,255,255,.4);
+  transition:color .25s ease,text-shadow .25s ease,transform .35s var(--spring);
+}
+.w.done{color:#fff}
+.w.on{
+  color:var(--hl);transform:scale(1.07);
+  text-shadow:0 0 16px rgba(255,212,59,.55),0 0 40px rgba(255,212,59,.25);
+}
+
+/* ---------- Poster (idle / after completion) ---------- */
+#poster{
+  position:absolute;inset:0;background:#000;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;
+  transition:opacity .8s ease;text-align:center;
+}
+#poster.hide{opacity:0;pointer-events:none}
+#poster .pl svg,#poster .pl img{filter:drop-shadow(0 0 24px rgba(55,118,171,.5));margin-bottom:10px;animation:float 4.2s ease-in-out infinite}
+#poster h1{font-size:30px;font-weight:800;letter-spacing:-.02em}
+#poster p{font-size:15px;color:rgba(255,255,255,.5)}
+
+/* ---------- Play button ---------- */
+#play{
+  width:56px;height:56px;border-radius:50%;flex:none;cursor:pointer;
+  display:grid;place-items:center;color:#fff;
+  background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.18);
+  transition:transform .3s var(--ease),border-color .3s,box-shadow .3s,color .3s,background .3s;
+}
+#play svg{width:22px;height:22px}
+#play .i-pause{display:none}
+#play.playing .i-play{display:none}
+#play.playing .i-pause{display:block}
+#play:hover{transform:scale(1.1);border-color:var(--hl);color:var(--hl);box-shadow:0 0 28px rgba(255,212,59,.28);background:rgba(255,212,59,.06)}
+#play:active{transform:scale(.96)}
+#play:focus-visible{outline:2px solid var(--hl);outline-offset:4px}
+
+/* ---------- Pause support (pseudo-elements included) ---------- */
+body.paused #screen *,
+body.paused #screen *::before,
+body.paused #screen *::after{animation-play-state:paused !important}
+body.paused #ambient{animation-play-state:paused}
+
+/* ---------- Keyframes ---------- */
+@keyframes float{0%,100%{transform:translateY(0) rotate(0)}50%{transform:translateY(-12px) rotate(.6deg)}}
+@keyframes breathe{0%,100%{opacity:.7;transform:scale(1)}50%{opacity:1;transform:scale(1.08)}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes blink{50%{opacity:0}}
+@keyframes flow{to{stroke-dashoffset:-20}}
+@keyframes npulse{
+  0%,60%,100%{fill:#000;stroke:#3776AB;transform:scale(1)}
+  20%{fill:#FFD43B;stroke:#FFD43B;transform:scale(1.35)}
+}
+@keyframes pop{
+  0%{opacity:0;transform:scale(.8);filter:blur(8px)}
+  60%{opacity:1;transform:scale(1.04);filter:blur(0)}
+  100%{opacity:1;transform:scale(1);filter:blur(0)}
+}
+@keyframes slidein{from{opacity:0;transform:translateX(-18px)}to{opacity:1;transform:none}}
+@keyframes ripple{0%{opacity:.6;transform:scale(.8)}100%{opacity:0;transform:scale(2.2)}}
+@keyframes grow{to{transform:scaleY(1)}}
+@keyframes draw{to{stroke-dashoffset:0}}
+@keyframes fadein{from{opacity:0}to{opacity:1}}
+@keyframes ping{0%{opacity:.75;transform:scale(1)}100%{opacity:0;transform:scale(1.5)}}
+@keyframes sweep{to{transform:translateX(120%)}}
+@keyframes outglow{
+  0%{box-shadow:0 0 0 rgba(255,212,59,0)}
+  35%{box-shadow:0 0 64px rgba(255,212,59,.3)}
+  100%{box-shadow:0 0 40px rgba(255,212,59,.08)}
+}
+@keyframes nudge{0%,100%{transform:translateY(0)}50%{transform:translateY(5px)}}
+@keyframes fillbar{to{transform:scaleX(1)}}
+@keyframes drift{
+  0%{opacity:0;transform:translate3d(0,0,0)}
+  30%{opacity:var(--o)}
+  100%{opacity:calc(var(--o) * .4);transform:translate3d(var(--dx),-90px,0)}
+}
+
+@media (prefers-reduced-motion:reduce){
+  .floaty,.fl svg,.fl img,#ambient,.spin,.ln,.nd,.orbit,#dust i,.arrow svg,#poster .pl svg,#poster .pl img{animation:none}
+  .task .sig::before{animation:none}
+}
+</style>
+</head>
+<body class="paused">
+
+<div id="frame">
+  <div id="screen">
+    <div id="ambient"></div>
+    <div id="dust"></div>
+
+    <div id="stage">
+      <!-- Scene 1 -->
+      <div class="group" id="g-python">
+        <div class="glow" id="py-glow"></div>
+        <div class="orbs halo item" id="py-halo">
+          <div class="orbit o2"><i></i></div>
+          <div class="orbit o3 rev"><i class="b"></i></div>
+        </div>
+        <div class="item" id="py-logo"><div class="floaty" data-svg="logo:190"></div></div>
+      </div>
+
+      <!-- NEW: Created in 1991 -->
+      <div class="group" id="g-year">
+        <div class="yr">
+          <div class="item" id="yr-logo" data-svg="logo:60"></div>
+          <div class="item" id="yr-num">1970</div>
+          <div class="rule" id="yr-rule"></div>
+          <div class="yr-cap item" id="yr-cap">First release</div>
+        </div>
+      </div>
+
+      <!-- Scene 2 -->
+      <div class="group" id="g-icons">
+        <div class="row">
+          <div class="ic item" id="ic-web"><div class="ring" data-svg="web"></div><span class="lbl">Websites</span></div>
+          <div class="ic item" id="ic-app"><div class="ring" data-svg="app"></div><span class="lbl">Applications</span></div>
+          <div class="ic item" id="ic-auto"><div class="ring" data-svg="gear"></div><span class="lbl">Automation</span></div>
+        </div>
+      </div>
+
+      <!-- NEW: Companies -->
+      <div class="group" id="g-cos">
+        <div class="cos">
+          <div class="item" id="co-logo" data-svg="logo:58"></div>
+          <div class="co item" id="co-1"><b>G</b>Google<span class="sig" data-svg="check"></span></div>
+          <div class="co item" id="co-2"><b>N</b>Netflix<span class="sig" data-svg="check"></span></div>
+          <div class="co item" id="co-3"><b>I</b>Instagram<span class="sig" data-svg="check"></span></div>
+        </div>
+      </div>
+
+      <!-- Scene 3 -->
+      <div class="group" id="g-code">
+        <div class="col">
+          <div class="win item" id="win">
+            <div class="bar"><i></i><i></i><i></i><span>hello.py</span></div>
+            <div id="code"></div>
+          </div>
+          <div class="out item" id="out">
+            <span class="olbl">Output</span>
+            <span class="oval"><b>&gt;</b>Hello World</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Extra scene: few lines of code -->
+      <div class="group" id="g-lines">
+        <div class="col">
+          <div class="win item" id="win2">
+            <div class="bar"><i></i><i></i><i></i><span>add.py</span></div>
+            <div id="code2"></div>
+          </div>
+          <div class="out item" id="out2">
+            <span class="olbl">Output</span>
+            <span class="oval"><b>&gt;</b>8</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- NEW: Automation -->
+      <div class="group" id="g-auto">
+        <div class="col">
+          <div class="win item" id="win-auto">
+            <div class="bar"><i></i><i></i><i></i><span>tasks.py</span></div>
+            <div class="tasks">
+              <div class="task item" id="tk-1"><span class="sig" data-svg="check"></span><span>Rename files</span></div>
+              <div class="task item" id="tk-2"><span class="sig" data-svg="check"></span><span>Send emails</span></div>
+              <div class="task item" id="tk-3"><span class="sig" data-svg="check"></span><span>Clean data</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Extra scene: libraries -->
+      <div class="group" id="g-libs">
+        <div class="libs">
+          <div class="lib item" id="lb-1">NumPy</div>
+          <div class="lib item" id="lb-2">Pandas</div>
+          <div class="lib item" id="lb-3">Flask</div>
+          <div class="lib item" id="lb-4">Django</div>
+        </div>
+      </div>
+
+      <!-- NEW: pip install -->
+      <div class="group" id="g-pip">
+        <div class="col">
+          <div class="win item" id="win-pip">
+            <div class="bar"><i></i><i></i><i></i><span>terminal</span></div>
+            <div id="code3"></div>
+            <div class="pwrap item" id="pw"><div class="pbar"><i></i></div><b>100%</b></div>
+          </div>
+          <div class="out item" id="out3">
+            <span class="olbl">Output</span>
+            <span class="oval"><b>&#10003;</b>Installed pandas</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Scene 4 -->
+      <div class="group" id="g-ai">
+        <div class="item" id="net" data-svg="net"></div>
+      </div>
+
+      <!-- Extra scene: operating systems -->
+      <div class="group" id="g-os">
+        <div class="row">
+          <div class="ic item" id="os-win"><div class="ring" data-svg="win"></div><span class="lbl">Windows</span></div>
+          <div class="ic item" id="os-mac"><div class="ring" data-svg="laptop"></div><span class="lbl">Mac</span></div>
+          <div class="ic item" id="os-lin"><div class="ring" data-svg="term"></div><span class="lbl">Linux</span></div>
+        </div>
+      </div>
+
+      <!-- NEW: Community -->
+      <div class="group" id="g-comm">
+        <div class="orbs item" id="orbs">
+          <div class="orbit o1"><i></i><i class="b x"></i></div>
+          <div class="orbit o2 rev"><i class="b"></i><i class="c x"></i></div>
+          <div class="orbit o3"><i></i><i class="c"></i><i class="d x"></i></div>
+          <div class="orb-core" data-svg="logo:54"></div>
+        </div>
+        <div class="chips">
+          <span class="chip item" id="ch-free">Free</span>
+          <span class="chip item" id="ch-open">Open source</span>
+        </div>
+      </div>
+
+      <!-- Scene 5 -->
+      <div class="group" id="g-roadmap">
+        <div class="node item" id="rm1">Basics</div>
+        <div class="arrow item" id="rma1" data-svg="arrow"></div>
+        <div class="node item" id="rm2">Practice</div>
+        <div class="arrow item" id="rma2" data-svg="arrow"></div>
+        <div class="node item" id="rm3"><span data-svg="folder:28"></span>Projects</div>
+      </div>
+
+      <!-- Extra scene: grow skills -->
+      <div class="group" id="g-grow">
+        <div class="steps">
+          <div class="step item" id="st-1" style="height:110px">Beginner</div>
+          <div class="step item" id="st-2" style="height:170px">Skilled</div>
+          <div class="step item" id="st-3" style="height:230px">Expert</div>
+        </div>
+      </div>
+
+      <!-- Scene 6 -->
+      <div class="group" id="g-brand">
+        <div class="brand item" id="b-title">Dark Code</div>
+        <div class="rule" id="b-rule"></div>
+        <div class="url item" id="b-url">darkcodeit.com</div>
+        <div class="cta item" id="b-cta">Follow for more lessons</div>
+      </div>
+
+      <!-- Keyword animations -->
+      <div id="flash">
+        <div class="kw" data-k="python"><div class="fl" data-svg="logo:150"></div><div class="cap">Python</div></div>
+        <div class="kw" data-k="code">
+          <div class="codeflash">
+            <span class="cl" style="--d:0s"><span class="k">def</span> <span class="f">hello</span><span class="p">():</span></span>
+            <span class="cl" style="--d:.15s"><span class="p">    </span><span class="f">print</span><span class="p">(</span><span class="s">"Hello"</span><span class="p">)</span></span>
+            <span class="cl" style="--d:.3s"><span class="f">hello</span><span class="p">()</span></span>
+          </div>
+        </div>
+        <div class="kw" data-k="ai"><div data-svg="chip:170"></div></div>
+        <div class="kw" data-k="data"><div data-svg="chart"></div></div>
+        <div class="kw" data-k="project"><div data-svg="folder:130" style="color:#FFD43B"></div><div class="cap">Project</div></div>
+      </div>
+    </div>
+
+    <div id="prog"><i></i></div>
+    <div id="subs"><p id="sentence" aria-live="off"></p></div>
+
+    <div id="poster">
+      <div class="pl" data-svg="logo:64"></div>
+      <h1>Python Introduction</h1>
+      <p id="poster-len">A short lesson from Dark Code</p>
+    </div>
+  </div>
+</div>
+
+<button id="play" type="button" aria-label="Play">
+  <svg class="i-play" viewBox="0 0 24 24"><path d="M8.5 5.5v13l10.5-6.5z" fill="currentColor"/></svg>
+  <svg class="i-pause" viewBox="0 0 24 24"><rect x="7" y="5.5" width="3.6" height="13" rx="1.1" fill="currentColor"/><rect x="13.4" y="5.5" width="3.6" height="13" rx="1.1" fill="currentColor"/></svg>
+</button>
+
+<script>
+(() => {
+  "use strict";
+
+  /* ============================================================
+     Helpers
+  ============================================================ */
+  const $  = (s, r = document) => r.querySelector(s);
+  const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
+  const on   = s => $$(s).forEach(e => e.classList.add("on"));
+  const off  = s => $$(s).forEach(e => e.classList.remove("on"));
+  const lit  = s => $$(s).forEach(e => e.classList.add("lit"));
+  const done = s => $$(s).forEach(e => e.classList.add("done"));
+
+  /* ============================================================
+     Background dust (deterministic, so every take looks the same)
+  ============================================================ */
+  (function dust() {
+    const box = $("#dust");
+    let seed = 7;
+    const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+    for (let i = 0; i < 24; i++) {
+      const d = document.createElement("i"), sz = (1.5 + rnd() * 2.2).toFixed(1);
+      d.style.cssText =
+        `left:${(rnd() * 100).toFixed(1)}%;top:${(20 + rnd() * 80).toFixed(1)}%;width:${sz}px;height:${sz}px;` +
+        `--o:${(.18 + rnd() * .35).toFixed(2)};--t:${(9 + rnd() * 9).toFixed(1)}s;` +
+        `--dl:${(-rnd() * 12).toFixed(1)}s;--dx:${(rnd() * 60 - 30).toFixed(0)}px`;
+      if (rnd() > .78) d.className = "y";
+      box.appendChild(d);
+    }
+  })();
+
+  /* ============================================================
+     SVG graphics (all inline, no dependencies)
+  ============================================================ */
+  const LOGO_ASPECT = 1.0059;   // width / height of images/python-logo.png
+  const SVG = {
+    logo: (w = 120) => {
+      // The PNG is cropped tight to the logo. Height follows the size given (same box height as before),
+      // width follows the image's own aspect ratio, so the logo is never stretched or squashed.
+      const ht = w * 111 / 97;
+      return `<img src="images/python-logo.png" width="${(ht * LOGO_ASPECT).toFixed(1)}" height="${ht.toFixed(1)}" alt="Python logo" draggable="false">`;
+    },
+
+    web: () =>
+      `<svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="6" y="11" width="52" height="42" rx="7"/><path d="M6 23h52"/>
+        <circle cx="14" cy="17" r="1.3" fill="currentColor"/><circle cx="20" cy="17" r="1.3" fill="currentColor"/>
+        <path d="M16 33h14M16 41h22M40 33h4"/></svg>`,
+
+    app: () =>
+      `<svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="17" y="6" width="30" height="52" rx="7"/>
+        <rect x="24" y="15" width="7" height="7" rx="2"/><rect x="34" y="15" width="7" height="7" rx="2"/>
+        <rect x="24" y="26" width="7" height="7" rx="2"/><rect x="34" y="26" width="7" height="7" rx="2"/>
+        <path d="M28 51h8"/></svg>`,
+
+    gear: () => {
+      let teeth = "";
+      for (let a = 0; a < 360; a += 45) teeth += `<path d="M32 8v7" transform="rotate(${a} 32 32)"/>`;
+      return `<svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
+        <g class="spin"><circle cx="32" cy="32" r="16"/>${teeth}</g><circle cx="32" cy="32" r="6"/></svg>`;
+    },
+
+    folder: (w = 64) =>
+      `<svg viewBox="0 0 64 64" width="${w}" height="${w}" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M6 16a4 4 0 0 1 4-4h14l6 7h24a4 4 0 0 1 4 4v27a4 4 0 0 1-4 4H10a4 4 0 0 1-4-4z"/>
+        <path d="M18 36h28M18 44h16"/></svg>`,
+
+    win: () =>
+      `<svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="9" y="9" width="21" height="21" rx="4"/><rect x="34" y="9" width="21" height="21" rx="4"/>
+        <rect x="9" y="34" width="21" height="21" rx="4"/><rect x="34" y="34" width="21" height="21" rx="4"/></svg>`,
+
+    laptop: () =>
+      `<svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="11" y="13" width="42" height="29" rx="5"/><path d="M5 50h54"/><path d="M27 46h10"/></svg>`,
+
+    term: () =>
+      `<svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="6" y="11" width="52" height="42" rx="7"/><path d="M17 26l9 7-9 7"/><path d="M32 41h14"/></svg>`,
+
+    arrow: () =>
+      `<svg viewBox="0 0 24 38" width="24" height="38" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 3v30M4 25l8 9 8-9"/></svg>`,
+
+    check: () =>
+      `<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="#FFD43B" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
+        <path class="tick" d="M5 12.5l4.5 4.5L19 7"/></svg>`,
+
+    chip: (w = 170) =>
+      `<svg viewBox="0 0 140 140" width="${w}" height="${w}" fill="none" stroke="#6FA8DC" stroke-width="3" stroke-linecap="round">
+        <circle class="rip" style="--d:0s" cx="70" cy="70" r="40"/><circle class="rip" style="--d:1.1s" cx="70" cy="70" r="40"/>
+        <rect x="32" y="32" width="76" height="76" rx="14" fill="rgba(55,118,171,.18)"/>
+        ${[50, 70, 90].map(p => `<path d="M${p} 14v18M${p} 108v18M14 ${p}h18M108 ${p}h18"/>`).join("")}
+        <text x="70" y="82" text-anchor="middle" font-size="34" font-weight="800" fill="#FFD43B" stroke="none" font-family="system-ui,sans-serif">AI</text></svg>`,
+
+    chart: () => {
+      const H = [46, 78, 60, 104, 88, 136];
+      let bars = "", dots = "", pts = [];
+      H.forEach((h, i) => {
+        const x = 20 + i * 44, y = 170 - h;
+        bars += `<rect class="bar-c" style="--d:${(i * .05).toFixed(2)}s" x="${x}" y="${y}" width="30" height="${h}" rx="5"/>`;
+        pts.push(`${x + 15},${y - 14}`);
+        dots += `<circle class="dot-c" style="--d:${(.35 + i * .08).toFixed(2)}s" cx="${x + 15}" cy="${y - 14}" r="4"/>`;
+      });
+      return `<svg viewBox="0 0 300 190" width="320" height="202">
+        <path class="axis" d="M10 172H290"/>${bars}
+        <polyline class="trend" points="${pts.join(" ")}"/>${dots}</svg>`;
+    },
+
+    net: () => {
+      const L = [3, 5, 5, 3], X = [38, 127, 216, 302], top = 20, bot = 220;
+      const P = L.map((n, i) => Array.from({ length: n }, (_, j) => ({ x: X[i], y: top + (bot - top) * (j / (n - 1)) })));
+      let lines = "", nodes = "";
+      for (let i = 0; i < P.length - 1; i++)
+        P[i].forEach((a, ai) => P[i + 1].forEach((b, bi) => {
+          lines += `<line class="ln" style="--d:${(i * .25 + ((ai + bi) % 5) * .1).toFixed(2)}s" x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}"/>`;
+        }));
+      P.forEach((layer, i) => layer.forEach(p => {
+        nodes += `<circle class="nd" style="--d:${(i * .3).toFixed(2)}s" cx="${p.x}" cy="${p.y}" r="7.5"/>`;
+      }));
+      return `<svg viewBox="0 0 340 240" width="340" height="240">${lines}${nodes}</svg>`;
+    }
+  };
+
+  $$("[data-svg]").forEach(el => {
+    const [name, arg] = el.dataset.svg.split(":");
+    el.innerHTML = SVG[name](arg ? +arg : undefined);
+  });
+
+  /* ============================================================
+     Code typing effect (one generic typer for all windows)
+  ============================================================ */
+  const TYPE_MS = 28;            // per character (was 40)
+
+  function makeTyper(sel, win, tokens) {
+    const el = $(sel);
+    const len = tokens.reduce((n, t) => n + t[1].length, 0);
+    const render = n => {
+      let left = n, html = "";
+      for (const [cls, txt] of tokens) {
+        if (left <= 0) break;
+        html += `<span class="${cls}">${txt.slice(0, left)}</span>`;
+        left -= txt.length;
+      }
+      el.innerHTML = html + '<span class="caret"></span>';
+    };
+    const run = time => {
+      on(win);
+      for (let i = 1; i <= len; i++) sched(time + 200 + i * TYPE_MS, () => render(i));
+    };
+    return { render, run };
+  }
+
+  const T1 = makeTyper("#code", "#win",
+    [["f", "print"], ["p", "("], ["s", '"Hello World"'], ["p", ")"]]);
+
+  const T2 = makeTyper("#code2", "#win2", [
+    ["p", "x = "], ["n", "5"], ["p", "\n"],
+    ["p", "y = "], ["n", "3"], ["p", "\n"],
+    ["f", "print"], ["p", "(x + y)"]
+  ]);
+
+  const T3 = makeTyper("#code3", "#win-pip",
+    [["p", "$ "], ["f", "pip"], ["p", " install "], ["s", "pandas"]]);
+
+  /* Year counter for the "1991" scene (pause-safe: driven by the scene clock) */
+  const yrNum = $("#yr-num");
+  function countYear(time) {
+    const from = 1970, to = 1991, dur = 1100, n = 28;
+    for (let k = 1; k <= n; k++) {
+      const e = 1 - Math.pow(1 - k / n, 3);                  // ease-out
+      sched(time + Math.round(k * dur / n), () => { yrNum.textContent = Math.round(from + (to - from) * e); });
+    }
+  }
+
+  /* ============================================================
+     Tutorial timeline
+     Cues fire when a given word (index) becomes active,
+     optionally delayed by `delay` ms.
+  ============================================================ */
+  const KEYWORDS = {
+    python: "python", code: "code", ai: "ai", artificial: "ai",
+    data: "data", project: "project", projects: "project"
+  };
+  const FLASH_HOLD = { python: 650, code: 1100, ai: 850, data: 950, project: 850 };
+
+  // Pace: each scene lasts as long as its sentence needs (fewer words = shorter scene).
+  // Was a fixed 6000ms per scene. Lower the numbers to speed up, raise to slow down.
+  const PACE_BASE = 1100, PACE_PER_WORD = 430;
+  const pace = text => PACE_BASE + text.split(" ").length * PACE_PER_WORD;
+  const scene = (text, animation, flash, cues, extra = {}) =>
+    ({ text, animation, flash, cues, duration: pace(text) + (extra.more || 0), last: !!extra.last });
+
+  const SCENES = [
+    scene("Python is a simple and powerful programming language.", "python", [], [
+      { at: 0, run: () => on("#py-glow, #py-halo, #py-logo") },
+      { at: 5, run: () => $("#py-glow").classList.add("pulse") }
+    ]),
+
+    scene("Python was created by Guido van Rossum in 1991.", "year", [], [
+      { at: 0, run: () => on("#yr-logo") },
+      { at: 4, run: () => on("#yr-num") },
+      { at: 5, run: countYear },
+      { at: 8, run: () => { lit("#yr-num"); on("#yr-rule, #yr-cap"); } }
+    ]),
+
+    scene("Python helps developers build websites applications and automation tools.", "icons", ["python"], [
+      { at: 4, run: () => on("#ic-web") },
+      { at: 5, run: () => on("#ic-app") },
+      { at: 7, run: () => on("#ic-auto") }
+    ]),
+
+    scene("Python is used by Google Netflix and Instagram.", "cos", ["python"], [
+      { at: 3, run: () => on("#co-logo") },
+      { at: 4, run: () => on("#co-1") },
+      { at: 5, run: () => on("#co-2") },
+      { at: 7, run: () => on("#co-3") },
+      { at: 7, delay: 350, run: () => lit("#co-1, #co-2, #co-3") }
+    ], { more: 200 }),
+
+    scene("Python syntax is clean and easy to understand.", "code", ["python"], [
+      { at: 1, delay: 350, run: T1.run },
+      { at: 4, run: () => on("#out") }
+    ]),
+
+    scene("Just a few lines of Python code can do amazing things.", "lines", ["code"], [
+      { at: 0, run: () => T2.render(0) },
+      { at: 1, run: T2.run },
+      { at: 9, run: () => on("#out2") }
+    ]),
+
+    scene("Python can automate boring tasks in just a few seconds.", "auto", ["python"], [
+      { at: 1, delay: 250, run: () => on("#win-auto") },
+      { at: 2, run: () => on("#tk-1") },
+      { at: 3, run: () => on("#tk-2") },
+      { at: 4, run: () => on("#tk-3") },
+      { at: 4, run: () => done("#tk-1") },
+      { at: 6, run: () => done("#tk-2") },
+      { at: 8, run: () => done("#tk-3") },
+      { at: 9, run: () => lit("#win-auto") }
+    ]),
+
+    scene("Python has thousands of libraries that save time.", "libs", ["python"], [
+      { at: 2, run: () => on("#lb-1") },
+      { at: 4, run: () => on("#lb-2") },
+      { at: 5, run: () => on("#lb-3") },
+      { at: 6, run: () => on("#lb-4") },
+      { at: 7, run: () => lit("#lb-1, #lb-2, #lb-3, #lb-4") }
+    ], { more: 250 }),
+
+    scene("Install any library with a single pip command.", "pip", [], [
+      { at: 0, run: () => on("#win-pip") },
+      { at: 1, delay: 100, run: T3.run },
+      { at: 3, run: () => on("#pw") },
+      { at: 6, delay: 250, run: () => on("#out3") }
+    ]),
+
+    scene("Python is widely used in artificial intelligence and data science.", "ai", ["python", "ai", "data"], [
+      { at: 4, run: () => on("#net") }
+    ]),
+
+    scene("Python runs on Windows Mac and Linux.", "os", ["python"], [
+      { at: 3, run: () => on("#os-win") },
+      { at: 4, run: () => on("#os-mac") },
+      { at: 6, run: () => on("#os-lin") }
+    ]),
+
+    scene("Python is free and open source with millions of developers.", "comm", ["python"], [
+      { at: 1, run: () => on("#orbs") },
+      { at: 2, delay: 300, run: () => on("#ch-free") },
+      { at: 4, delay: 100, run: () => on("#ch-open") },
+      { at: 7, run: () => lit("#orbs") },
+      { at: 9, run: () => lit("#ch-free, #ch-open") }
+    ]),
+
+    scene("Learning Python starts with basic concepts and practice.", "roadmap", ["python"], [
+      { at: 2, run: () => on("#rm1") },
+      { at: 4, run: () => lit("#rm1") },
+      { at: 5, run: () => on("#rma1, #rm2") },
+      { at: 6, run: () => on("#rma2, #rm3") },
+      { at: 7, run: () => lit("#rm2") },
+      { at: 7, delay: 200, run: () => lit("#rm3") }
+    ], { more: 300 }),
+
+    scene("Build real projects to grow your Python skills.", "grow", ["project"], [
+      { at: 4, delay: 300, run: () => on("#st-1") },
+      { at: 5, run: () => on("#st-2") },
+      { at: 6, run: () => on("#st-3") },
+      { at: 7, run: () => lit("#st-3") }
+    ]),
+
+    scene("Start your Python journey with Dark Code.", "brand", ["python"], [
+      { at: 3, run: () => on("#b-rule") },
+      { at: 5, run: () => on("#b-title") },
+      { at: 6, delay: 150, run: () => on("#b-url") },
+      { at: 6, delay: 650, run: () => on("#b-cta") }
+    ], { last: true, more: 700 })
+  ];
+
+  // Derive words + per-word start times (weighted by word length)
+  const LEAD = 200, TAIL = 600, END_HOLD = 1800;
+  const STARTS = [];
+  let TOTAL = 0;
+  SCENES.forEach(s => {
+    s.words = s.text.split(" ");
+    STARTS.push(TOTAL);
+    TOTAL += s.duration;
+    const weights = s.words.map(w => w.replace(/[^\w]/g, "").length + 2);
+    const sum = weights.reduce((a, b) => a + b, 0);
+    const win = s.duration - LEAD - TAIL;
+    let acc = LEAD;
+    s.ws = weights.map(w => { const st = Math.round(acc); acc += win * w / sum; return st; });
+  });
+  $("#poster-len").textContent = `A ${Math.round((TOTAL + END_HOLD) / 1000)}-second lesson from Dark Code`;
+
+  /* ============================================================
+     Engine: scene clock + event queue (pause-safe)
+  ============================================================ */
+  const sentence = $("#sentence"), poster = $("#poster"), btn = $("#play"), prog = $("#prog i");
+  let idx = -1, t = 0, queue = [], playing = false, started = false, last = 0, raf = 0, flashToken = 0;
+
+  function sched(time, fn) {
+    queue.push({ time, fn });
+    queue.sort((a, b) => a.time - b.time);
+  }
+
+  function setProg(p) {
+    prog.style.transform = `scaleX(${Math.max(0, Math.min(1, p)).toFixed(4)})`;
+  }
+
+  function setWord(k) {
+    $$(".w", sentence).forEach((w, i) => {
+      w.classList.toggle("on", i === k);
+      w.classList.toggle("done", k === -1 ? true : i < k);   // spoken words turn solid white
+    });
+  }
+
+  function flashOn(key) {
+    const token = ++flashToken;
+    $$(".kw").forEach(e => e.classList.remove("on"));
+    const el = $(`.kw[data-k="${key}"]`);
+    void el.offsetWidth;                       // restart CSS animations
+    el.classList.add("on");
+    $("#flash").classList.add("on");
+    return token;
+  }
+  function flashOff(token) {
+    if (token !== flashToken) return;
+    $("#flash").classList.remove("on");
+  }
+  function flashCleanup(token) {
+    if (token !== flashToken) return;
+    $$(".kw").forEach(e => e.classList.remove("on"));
+  }
+
+  function resetStage() {
+    $$(".group,.item,.glow,.rule").forEach(e => e.classList.remove("on", "lit", "pulse", "out", "done"));
+    $("#flash").classList.remove("on");
+    $$(".kw").forEach(e => e.classList.remove("on"));
+    flashToken++;
+    T1.render(0); T2.render(0); T3.render(0);
+    yrNum.textContent = "1970";
+    sentence.classList.remove("show");
+  }
+
+  function buildScene(i, carry = 0) {
+    idx = i; t = carry; queue = [];
+    const s = SCENES[i];
+    resetStage();
+    sentence.innerHTML = s.words.map(w => `<span class="w">${w}</span>`).join(" ");
+
+    sched(60, () => {
+      sentence.classList.add("show");
+      $("#g-" + s.animation).classList.add("on");
+    });
+
+    s.words.forEach((w, k) => {
+      sched(s.ws[k], () => setWord(k));
+      const key = KEYWORDS[w.toLowerCase().replace(/[^\w]/g, "")];
+      if (key && s.flash.includes(key)) {
+        sched(s.ws[k] + 80, tm => {
+          const token = flashOn(key);
+          sched(tm + FLASH_HOLD[key], () => flashOff(token));
+          sched(tm + FLASH_HOLD[key] + 350, () => flashCleanup(token));
+        });
+      }
+    });
+
+    s.cues.forEach(c => sched(s.ws[c.at] + (c.delay || 0), c.run));
+
+    sched(s.duration - 400, () => { sentence.classList.remove("show"); setWord(-1); });
+    if (s.last) {
+      sched(s.duration + END_HOLD, finish);
+    } else {
+      sched(s.duration - 380, () => {
+        const g = $("#g-" + s.animation);
+        g.classList.remove("on");
+        g.classList.add("out");
+      });
+      sched(s.duration, () => buildScene(i + 1, t - s.duration));
+    }
+  }
+
+  function step() {
+    while (queue.length && queue[0].time <= t) {
+      const q = queue.shift();
+      q.fn(q.time);
+    }
+  }
+
+  function loop(now) {
+    const dt = Math.min(now - last, 120);
+    last = now; t += dt;
+    step();
+    if (idx >= 0) setProg((STARTS[idx] + t) / TOTAL);
+    if (playing) raf = requestAnimationFrame(loop);
+  }
+
+  function setPlaying(p) {
+    playing = p;
+    document.body.classList.toggle("paused", !p);
+    btn.classList.toggle("playing", p);
+    btn.setAttribute("aria-label", p ? "Pause" : "Play");
+    cancelAnimationFrame(raf);
+    if (p) { last = performance.now(); raf = requestAnimationFrame(loop); }
+  }
+
+  function start() {
+    started = true;
+    poster.classList.add("hide");
+    setProg(0);
+    buildScene(0);
+    setPlaying(true);
+  }
+
+  function finish() {                          // reset after completion
+    setPlaying(false);
+    started = false;
+    setProg(1);
+    $$(".group").forEach(g => g.classList.remove("on"));
+    poster.classList.remove("hide");
+    setTimeout(() => { if (!started) { resetStage(); setProg(0); } }, 900);
+  }
+
+  btn.addEventListener("click", () => started ? setPlaying(!playing) : start());
+  document.addEventListener("keydown", e => {
+    if ((e.code === "Space") && e.target !== btn) { e.preventDefault(); btn.click(); }
+  });
+
+  /* ============================================================
+     Fit the 9:16 screen into the viewport
+  ============================================================ */
+  function fit() {
+    const s = Math.min(1, (innerHeight - 130) / 750, (innerWidth - 40) / 420);
+    document.documentElement.style.setProperty("--s", Math.max(.4, s).toFixed(3));
+  }
+  addEventListener("resize", fit);
+  fit();
+  T1.render(0); T2.render(0); T3.render(0);
+})();
+</script>
+</body>
+</html>
